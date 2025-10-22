@@ -1,0 +1,5 @@
+Translator Mode is used to translate words and long sentences in Indonesian or English. After selecting this mode, you can immediately say the word or sentence you want to translate.
+
+Pocala will automatically detect the language you speak and provide the translation in the target language. This process can be repeated as many times as you like while you are still using it.
+
+To exit Translator mode, simply say the word “exit.” The system will then return you to the mode selection menu.

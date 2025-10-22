@@ -1,0 +1,151 @@
+import re
+
+# Stop words untuk pembersihan
+stop_words_id = {
+    'apa', 'arti', 'dari', 'dalam', 'itu', 'adalah', 'maksud', 'artinya', 'bahasa', 'inggris', 'inggrisnya', 
+    'terjemahan', 'terjemahkan', 'kata', 'beri', 'saya', 'ke', 'di', 'pada', 'untuk', 'dengan', 
+    'atau', 'dan', 'yang', 'ini', 'tersebut', 'bisa', 'jadi', 'seperti', 'saya ingin tau tentang', 'saya ingin tahu tentang'
+}
+stop_words_en = {
+    'what', 'is', 'the', 'of', 'in', 'to', 'a', 'an', 'does', 'mean', 'meaning', 'define', 
+    'definition', 'translate', 'how', 'do', 'you', 'say', 'indonesian', 'tell', 'me', 'for', 
+    'with', 'on', 'at', 'by', 'or', 'and', 'this', 'that', 'like', 'i want to know about'
+}
+
+def extract_vocab_word(text, lang="id"):
+    """
+    Mengekstrak kata kosa kata dari kalimat seperti 'apa arti laba-laba' atau 'what is the meaning of spider'.
+    Robust untuk frasa multi-kata tanpa daftar valid.
+    """
+    if not text or len(text.strip()) == 0:
+        return "No valid word found"
+    
+    text = text.lower().strip()
+    # Ganti tanda hubung dengan spasi untuk menangani 'kupu-kupu' -> 'kupu kupu'
+    text = text.replace("-", " ")
+    # Hapus karakter non-alphanumerik kecuali spasi
+    text = re.sub(r"[^\w\s]", "", text)
+    
+    # Pilih stop words berdasarkan bahasa
+    stop_words = stop_words_id if lang == "id" else stop_words_en
+    
+    # Pola regex berdasarkan bahasa (diperluas untuk variasi)
+    if lang == "id":
+        patterns = [
+            r"(?:apa arti dari|arti dari|apa arti|artinya|apa maksud dari|maksud dari|apa maksud|apa itu) (.+)",
+            r"(?:apa bahasa inggris dari|bahasa inggris dari|apa bahasa inggris|apa terjemahan dari|terjemahkan) (.+)",
+        ]
+    else:
+        patterns = [
+            r"(?:what is the meaning of|what does|define|definition of|tell me the meaning of|what is) (.+)",
+            r"(?:translate|how do you say|how to say|what is the indonesian of|i want to translate) (.+?) (?:to indonesian|in indonesian|$)",
+        ]
+    
+    # Coba cocokkan pola
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            extracted = match.group(1).strip()
+            # Bersihkan stop words
+            words = extracted.split()
+            valid_words = [word for word in words if word not in stop_words]
+            # Ambil hingga 4 kata pertama yang valid untuk frasa multi-kata
+            return " ".join(valid_words[:4]) if valid_words else extracted.split()[-1]
+    
+    # Fallback: bersihkan stop words dari seluruh text
+    words = text.split()
+    valid_words = [word for word in words if word not in stop_words]
+    
+    if not valid_words:
+        return ""
+    
+    # Jika <=4 kata setelah bersih, ambil semua; jika lebih, ambil 4 kata terakhir
+    if len(valid_words) <= 4:
+        return " ".join(valid_words)
+    else:
+        return " ".join(valid_words[-4:])
+
+
+# Stop words sederhana untuk membersihkan topik
+stop_words = {'i', 'want', 'to', 'a', 'an', 'the', 'about', 'in', 'for', 'with', 'on', 'at', 'by', 'of', 'can', 'we', 'do', 
+              'lets', 'try', 'let', 'us', 'learn', 'please', 'give', 'show', 'teach', 'me', 'explain', 'saya', 'ingin', 
+              'mau', 'belajar', 'beri', 'aku', 'tentang', 'bahas', 'is', 'and', 'its', 'usage', 'like', 'talk'}
+
+# Daftar topik grammar bahasa Inggris yang komprehensif (diurutkan longest first)
+valid_topics = [
+    "present perfect continuous tense", "past perfect continuous tense", "future perfect continuous tense",
+    "simple present tense", "present continuous tense", "present perfect tense",
+    "simple past tense", "past continuous tense", "past perfect tense",
+    "simple future tense", "future continuous tense", "future perfect tense",
+    "direct and indirect speech", "active and passive voice", "subject-verb agreement",
+    "singular and plural nouns", "count and non-count nouns",
+    "parts of speech", "reported speech", "direct speech", "indirect speech",
+    "phrasal verbs", "conditional sentences", "adjective clauses", "relative clauses",
+    "irregular verbs", "auxiliary verbs", "possessive nouns",
+    "dangling modifiers", "embedded questions", "parallel structure",
+    "conjunctive adverbs", "confusing words", "conversational language",
+    "commonly misused words", "english clause syntax",
+    "present tenses", "past tenses", "future tenses", "verb tenses",
+    "comparatives", "superlatives", "subjunctive", "perfectives",
+    "conditionals", "modals", "imperative", "if clauses", "wish",
+    "passive voice", "active voice", "verb forms", "main verbs",
+    "articles", "determiners", "nouns", "pronouns", "verbs", "adverbs",
+    "adjectives", "prepositions", "conjunctions", "interjections",
+    "relative pronouns", "reflexive pronouns", "indefinite pronouns",
+    "proper nouns", "common nouns", "singular nouns",
+    "action verbs", "be verbs", "antonyms", "case", "capitalization",
+    "clause", "colon", "comma", "comma splice", "complement", "compound",
+    "gender", "time-telling", "will", "would", "shall", "should",
+    "ing form", "infinitive", "punctuation", "adjective forms", "nationalities"
+]
+# Urutkan berdasarkan panjang descending untuk match terpanjang dulu
+valid_topics.sort(key=len, reverse=True)
+
+def extract_topic(text):
+    """
+    Mengekstrak topik dari kalimat, robust untuk input langsung tanpa pola.
+    """
+    if not text or len(text.strip()) == 0:
+        return "No topic found"
+    
+    text = text.lower().strip()
+    text = re.sub(r"[^\w\s\-]", "", text)
+    
+    # Prioritas 1: Cek jika ada valid topic di text
+    for topic in valid_topics:
+        if topic in text:
+            return topic
+    
+    # Prioritas 2: Pola regex untuk frasa
+    patterns = [
+        r"(?:i want to learn|i need to learn|teach me about|explain about|tell me about) (.+)",
+        r"(?:can we learn|can you teach|could you explain) (.+)",
+        r"(?:lets learn|lets try|let us learn) (.+)",
+        r"(?:please give me|please show me) (.+)",
+        r"(?:saya ingin belajar|saya mau belajar|beri saya|ajari saya) (.+)",
+        r"(?:tentang|bahas) (.+)",
+        r"(?:learn|study|discuss|talk about) (.+)",
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            topic = match.group(1).strip()
+            # Bersihkan stop words
+            topic_words = [word for word in topic.split() if word not in stop_words]
+            cleaned_topic = " ".join(topic_words)
+            # Cek lagi jika cleaned match valid topic
+            for v_topic in valid_topics:
+                if v_topic in cleaned_topic:
+                    return v_topic
+            return cleaned_topic if cleaned_topic else text
+    
+    # Fallback: Bersihkan seluruh text, ambil semua jika <=5 kata, atau last 5 jika lebih
+    words = text.split()
+    cleaned_words = [word for word in words if word not in stop_words]
+    if not cleaned_words:
+        return " ".join(words[-2:]) if len(words) >= 2 else text
+    if len(cleaned_words) <= 5:
+        return " ".join(cleaned_words)
+    else:
+        return " ".join(cleaned_words[-5:])

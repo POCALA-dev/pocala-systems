@@ -1,0 +1,3 @@
+Mode Assistant berfungsi sebagai pendamping belajar bahasa Inggris. Setelah memilih mode ini, Anda dapat memilih salah satu fungsi yang tersedia, yaitu Grammar, Ask, Question, atau Speaking, sesuai kebutuhan Anda.
+
+Begitu salah satu fungsi dipilih, Anda akan langsung masuk ke dalamnya dan dapat menggunakannya. Setelah selesai, Pocala akan menanyakan apakah Anda ingin mencoba fungsi lain. Jika menjawab ya, Anda bisa melanjutkan ke fungsi berikutnya. Jika menjawab tidak, maka Anda akan dikembalikan ke menu pemilihan mode.

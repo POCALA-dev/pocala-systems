@@ -1,0 +1,5 @@
+Vocabulary Mode is used to expand your English vocabulary. After selecting this mode, you will be asked to specify the input language first, whether Indonesian or English.
+
+Once the language is selected, you can immediately say a word in the input language. Pocala will then provide the results, including the translation, pronunciation or phonetics, definition of the word, and examples of its use in sentences.
+
+Once the results are displayed, the system will ask if you want to try another word. If you answer yes, you can enter a new word. If you answer no, you will return to the mode selection menu.

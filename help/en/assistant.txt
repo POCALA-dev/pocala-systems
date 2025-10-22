@@ -1,0 +1,3 @@
+Mode Assistant functions as an English learning companion. After selecting this mode, you can choose one of the available functions, namely Grammar, Ask, Question, or Speaking, according to your needs.
+
+Once a function is selected, you will be directed to it and can begin using it. Upon completion, Pocala will ask if you wish to try another function. If you answer yes, you can proceed to the next function. If you answer no, you will be returned to the mode selection menu.

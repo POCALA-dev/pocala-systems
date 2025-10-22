@@ -1,0 +1,5 @@
+Speaking is a function in Assistant mode that is used to practice speaking English and Indonesian. To use it, select Assistant mode and then select the Speaking function. Once you enter, you will be asked to select the language you want to use as input, either Indonesian or English.
+
+After selecting the language, you can immediately speak to Pocala in the selected language. You are free to say any sentences or engage in any conversation. Pocala will then provide responses based on the conversation you initiate, making the process feel like a two-way conversation.
+
+The conversation will continue until you say the word “exit” to return to the function selection screen. If you wish to clear the conversation history and start a new topic, you can say “clear context” to reset the previous conversation context.

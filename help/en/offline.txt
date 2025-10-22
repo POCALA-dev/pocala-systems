@@ -1,0 +1,3 @@
+The offline version can be used both with and without an internet connection. When you enter this version, Pocala will ask you which mode you want to choose, namely Vocabulary, Translator, or Assistant.
+
+Once one of the modes is selected, you can immediately use it according to your needs. Once finished, the system will ask if you want to continue in the offline version. If you answer yes, you can try other modes. If you answer no, you will be returned to the homepage.

@@ -1,0 +1,5 @@
+Saat pertama kali dinyalakan, Pocala akan berada di beranda dan langsung memeriksa apakah perangkat terhubung dengan internet. Jika ada koneksi, Anda akan ditanya apakah ingin menggunakan versi online. Jawab ya untuk online atau tidak untuk langsung masuk ke versi offline. Jika tidak ada koneksi sejak awal, sistem otomatis masuk ke versi offline tanpa menanyakan pilihan.
+
+Setiap kali Anda selesai menggunakan salah satu versi, sistem akan mengembalikan Anda ke menu utama. Di sini, Pocala akan menanyakan apakah ingin memulai lagi. Jika menjawab ya, Anda dapat melanjutkan. Jika menjawab tidak, sistem akan melakukan shutdown otomatis.
+
+Selain itu, jika Anda tidak melakukan interaksi apapun di beranda selama lima menit, Pocala juga akan shutdown secara otomatis untuk menghemat daya

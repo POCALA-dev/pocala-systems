@@ -1,0 +1,3 @@
+Ask is a function in Assistant mode that is used to ask questions about lesson material. To use it, select Assistant mode and then select the Ask function. Once you are in this mode, you will be asked to specify the input language, either Indonesian or English.
+
+After selecting the language, you can speak your question in the chosen input language. Pocala will then process the question and provide an answer in the same language as your input. After the answer is provided, the system will ask if you want to continue with another question. If you answer yes, you can immediately ask a new question, and if you answer no, you will return to the function selection menu in Assistant mode.

@@ -1,0 +1,4 @@
+Pocala is a portable device designed to help you learn English anywhere and anytime, even without an internet connection. The learning process becomes more interactive thanks to artificial intelligence support that provides an adaptive and enjoyable learning experience. Pocala offers premium modes such as Vocabulary, Translator, and Assistant, which are specifically developed to address various challenges in language learning. Equipped with speech recognition and speech synthesis technology, this device can be easily used by anyone, including visually impaired users.
+
+Pocala was developed by the PKM-KC team from the Islamic University of Kalimantan Muhammad Arsyad Al Banjari Banjarmasin, funded by the Ministry of Higher Education, Science, and Technology (Kemdiktisaintek) through Belmawa, under the PKM Karsa Cipta scheme for the year 2025
+

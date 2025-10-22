@@ -1,0 +1,5 @@
+Speaking adalah fungsi dalam mode Assistant yang digunakan untuk melatih kemampuan berbicara bahasa Inggris maupun Indonesia secara lisan. Untuk menggunakannya, pilih mode Assistant lalu pilih fungsi Speaking. Setelah masuk, Anda akan diminta menentukan bahasa yang akan digunakan sebagai input, apakah Indonesia atau English.
+
+Setelah memilih bahasa, Anda dapat langsung berbicara kepada Pocala sesuai bahasa yang dipilih. Anda bebas menyampaikan kalimat atau percakapan apa saja. Pocala kemudian akan memberikan jawaban sesuai pembicaraan yang Anda sampaikan, sehingga proses berlangsung layaknya percakapan dua arah.
+
+Percakapan ini akan terus berlanjut hingga Anda mengucapkan kata exit untuk kembali ke pemilihan fungsi. Jika ingin menghapus riwayat percakapan dan memulai topik baru, Anda dapat mengucapkan clear context agar konteks percakapan sebelumnya direset.

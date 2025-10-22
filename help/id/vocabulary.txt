@@ -1,0 +1,5 @@
+Mode Vocabulary digunakan untuk memperbanyak kosakata Bahasa inggris. Setelah memilih mode ini, Anda akan diminta menentukan bahasa input terlebih dahulu, apakah Indonesia atau English.
+
+Setelah bahasa dipilih, Anda bisa langsung mengucapkan sebuah kata sesuai bahasa input. Pocala kemudian akan memberikan hasil berupa terjemahan, cara pengucapan atau fonetik, definisi kata, serta contoh penggunaannya dalam kalimat.
+
+Begitu hasil ditampilkan, sistem akan menanyakan apakah Anda ingin coba kata lain. Jika menjawab ya, Anda bisa memasukkan kata baru. Jika menjawab tidak, Anda akan kembali ke menu pemilihan mode.

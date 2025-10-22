@@ -1,0 +1,3 @@
+Grammar is a function in Assistant mode that is used to check the grammar in English sentences. After selecting Assistant mode, you can select the Grammar function to start using it.
+
+Within this function, you can speak the English sentence you wish to check. Pocala will provide results in the form of sentence structure corrections if errors are detected, along with a brief explanation of the error's location. After the results are displayed, the system will ask if you wish to try another sentence. If you answer yes, you can provide a new sentence, and if you answer no, you will return to the function selection menu in Assistant mode.

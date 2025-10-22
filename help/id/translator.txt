@@ -1,0 +1,5 @@
+Mode Translator digunakan untuk menerjemahkan kata maupun kalimat panjang dalam bahasa Indonesia atau bahasa Inggris. Setelah memilih mode ini, Anda dapat langsung mengucapkan kata atau kalimat yang ingin diterjemahkan.
+
+Pocala akan secara otomatis mendeteksi bahasa yang Anda ucapkan, lalu memberikan hasil terjemahan ke bahasa target. Proses ini dapat diulangi berkali-kali selama Anda masih ingin menggunakannya.
+
+Untuk keluar dari mode Translator, cukup ucapkan kata exit. Sistem kemudian akan mengembalikan Anda ke menu pemilihan mode.

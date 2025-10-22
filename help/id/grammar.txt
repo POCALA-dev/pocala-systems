@@ -1,0 +1,3 @@
+Grammar adalah fungsi dalam mode Assistant yang digunakan untuk memeriksa tata bahasa dalam kalimat bahasa Inggris. Setelah memilih mode Assistant, Anda dapat memilih fungsi Grammar untuk mulai menggunakannya.
+
+Di dalam fungsi ini, Anda bisa mengucapkan kalimat bahasa Inggris yang ingin diperiksa. Pocala akan memberikan hasil berupa perbaikan struktur kalimat jika terdapat kesalahan, sekaligus penjelasan singkat mengenai letak kesalahannya. Setelah hasil ditampilkan, sistem akan menanyakan apakah Anda ingin mencoba kalimat lain. Jika menjawab ya, Anda dapat memberikan kalimat baru, dan jika menjawab tidak, maka Anda akan kembali ke menu pemilihan fungsi dalam mode Assistant.

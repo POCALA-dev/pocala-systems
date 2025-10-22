@@ -1,0 +1,3 @@
+Versi online hanya dapat digunakan jika perangkat terhubung dengan internet. Setelah masuk, Pocala akan menanyakan mode apa yang ingin Anda pilih, yaitu Vocabulary, Translator, atau Assistant.
+
+Begitu salah satu mode dipilih, Anda akan langsung masuk dan dapat menggunakannya sesuai kebutuhan. Setelah selesai, Pocala akan menanyakan apakah Anda ingin tetap berada di versi online. Jika menjawab ya, Anda bisa melanjutkan dengan mode lain. Jika menjawab tidak, Anda akan dikembalikan ke beranda awal.

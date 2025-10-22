@@ -1,0 +1,5 @@
+When first turned on, Pocala will be on the home screen and immediately check whether the device is connected to the internet. If there is a connection, you will be asked if you want to use the online version. Answer yes for online or no to go directly to the offline version. If there is no connection from the start, the system will automatically enter the offline version without asking for a choice.
+
+Every time you finish using either version, the system will return you to the main menu. Here, Pocala will ask if you want to start again. If you answer yes, you can continue. If you answer no, the system will automatically shut down.
+
+Additionally, if you do not interact with the home screen for five minutes, Pocala will also automatically shut down to conserve power.
