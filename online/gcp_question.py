@@ -8,10 +8,12 @@ from clients.gcp_client import gcp_gemini_generate_chat
 from inout.gcp_transcriber import transcribe_en, transcribe_auto
 from inout.gcp_output import speak_and_display
 from inout.recorder import record_once
-from utils.extract_word import extract_topic
+from utils.extract_word import extract_topic_and_level
 from utils.gcp_context_builder import GcpChatContext
 from utils.path_helper import get_resource_path
 from utils.response_check import is_yes, is_no
+from utils.cleaned_text import clean_for_tts
+
 
 def normalize_answer(user_text, mode="mc"):
     """Membersihkan dan menormalkan jawaban pengguna."""
@@ -39,13 +41,14 @@ def normalize_answer(user_text, mode="mc"):
 
     return cleaned_text
 
+
 def parse_question_and_answer(model_output):
     """Memisahkan teks model menjadi pertanyaan, opsi, dan jawaban benar."""
     lines = [line.strip() for line in model_output.strip().splitlines() if line.strip()]
     question_lines = []
     options = []
     correct_answer = None
-    
+
     for line in lines:
         lower_line = line.lower()
         if lower_line.startswith("key answer") or lower_line.startswith("correct answer"):
@@ -57,6 +60,7 @@ def parse_question_and_answer(model_output):
 
     question_text = "\n".join(question_lines).strip()
     return question_text, options, correct_answer
+
 
 def tanya_lanjut_question(lcd=None):
     """Menanyakan apakah pengguna ingin lanjut, ganti topik, atau keluar."""
@@ -90,25 +94,48 @@ def tanya_lanjut_question(lcd=None):
                 lcd=lcd
             )
 
+def _level_guidelines(lvl):
+    if not lvl or lvl == "unspecified":
+        return ""
+    if lvl == "advanced":
+        return (
+            "- Difficulty: advanced (C1–C2)\n"
+            "- Use complex structures and advanced vocabulary\n"
+            "- Distractors should be subtle and plausible\n"
+        )
+    if lvl == "intermediate":
+        return (
+            "- Difficulty: intermediate (B1–B2)\n"
+            "- Mix simple and complex sentences; some less common vocabulary\n"
+            "- Distractors should test common confusions\n"
+        )
+    # basic
+    return (
+        "- Difficulty: basic (A1–A2)\n"
+        "- Use short, simple sentences and high-frequency vocabulary\n"
+        "- Avoid multiple grammar points in one item\n"
+    )
+
 
 def question_mode(lcd=None):
     """Mode utama latihan soal: memilih topik, tipe pertanyaan, dan berinteraksi."""
-  
+
     # Load daftar topik dari file JSON
     TOPICS_PATH = get_resource_path("resource", "predefined_topics.json")
     with open(TOPICS_PATH, "r", encoding="utf-8") as f:
         PREDEFINED_TOPICS = json.load(f)
-      
+
     context = GcpChatContext(max_messages=6)
 
     speak_and_display("Question function selected.", lang="en", lcd=lcd)
     topic = None
+    level = None 
     question_type = None
     question_number = 1
     last_question = None
     last_correct_answer = None
     previous_questions = []
-  
+
     while True:
         if topic is None:
             speak_and_display(
@@ -141,27 +168,32 @@ def question_mode(lcd=None):
                             continue
 
                         raw_text = transcribe_en(audio_topic, lcd=lcd).strip()
-                        topic = extract_topic(raw_text)
-                        print(f"[TOPIC EXTRACTED]: {topic}")
+                        info = extract_topic_and_level(raw_text)
+                        topic = info.get("topic")
+                        level = info.get("level", "unspecified")
+                        print(f"[TOPIC EXTRACTED]: {topic} | LEVEL: {level}")
 
                         if not topic:
                             speak_and_display(
-                                "Sorry, I didn't catch the topic. "
-                                "Please try again.",
+                                "Sorry, I didn't catch the topic. Please try again.",
                                 lang="en",
                                 lcd=lcd,
                             )
                             continue
                         break
 
-                    speak_and_display(
-                        f"Topic chosen: {topic}", lang="en", lcd=lcd
-                    )
+                    # Tampilkan level hanya jika ada (bukan unspecified)
+                    if level and level != "unspecified":
+                        speak_and_display(f"Topic chosen: {topic} (level: {level})", lang="en", lcd=lcd)
+                    else:
+                        speak_and_display(f"Topic chosen: {topic}", lang="en", lcd=lcd)
                     break
 
                 elif is_no(reply):
                     topic = random.choice(PREDEFINED_TOPICS)
                     print(f"[TOPIC RANDOMLY CHOSEN]: {topic}")
+                    # level dibiarkan None/unspecified agar model bebas
+                    level = "unspecified"
                     speak_and_display(
                         f"Random topic chosen: {topic}", lang="en", lcd=lcd
                     )
@@ -171,7 +203,7 @@ def question_mode(lcd=None):
                     speak_and_display(
                         "Please say yes or no.", lang="en", lcd=lcd
                     )
-        
+
         if question_type is None:
             speak_and_display("What type of question? Options or short answer?", lang="en", lcd=lcd)
             while True:
@@ -191,10 +223,10 @@ def question_mode(lcd=None):
                     question_type = None
                     break
                 speak_and_display("Unknown type. Please say options or short answer.", lang="en", lcd=lcd)
-                
+
         if topic is None:
             continue
-            
+
         context.clear(keep_system=True)
         for q in previous_questions:
             context.add_user_message(f"Previous question: {q},")
@@ -202,10 +234,13 @@ def question_mode(lcd=None):
         if lcd:
             lcd.display_text(f"Generating question {question_number}...")
 
+        guides = _level_guidelines(level)
+
         if question_type == "multiple choice":
             prompt = (
                 f"Question Number {question_number}.\n"
                 f"Generate exactly ONE English multiple-choice question about the topic '{topic}'.\n"
+                f"{guides}"
                 f"Avoid repeating any of the previous questions mentioned in chat history.\n"
                 f"Include:\n"
                 f"- Question text\n"
@@ -218,6 +253,7 @@ def question_mode(lcd=None):
             prompt = (
                 f"Question Number {question_number}.\n"
                 f"Generate exactly ONE English short-answer question about the topic '{topic}'.\n"
+                f"{guides}"
                 f"Avoid repeating any of the previous questions mentioned in chat history.\n"
                 f"Include:\n"
                 f"- Question text without options\n"
@@ -225,23 +261,23 @@ def question_mode(lcd=None):
                 f"Do not give explanation.\n"
                 f"Output must contain only ONE question, not a list."
             )
-            
+
         model_output = gcp_gemini_generate_chat(prompt, context=context).replace("*", "")
         print(f"[RAW MODEL OUTPUT]:\n{model_output}")
 
         question_text, options, last_correct_answer = parse_question_and_answer(model_output)
         last_question = question_text
-        
+
         extracted_question_line = question_text.splitlines()[0] if question_text else ""
         previous_questions.append(extracted_question_line.strip())
 
-        speak_and_display(question_text, lang="en", lcd=lcd)
+        speak_and_display(clean_for_tts(question_text), lang="en", lcd=lcd)
         time.sleep(0.5)
 
         for opt in options:
-            speak_and_display(opt, lang="en", lcd=lcd)
+            speak_and_display(clean_for_tts(opt), lang="en", lcd=lcd)
             time.sleep(0.3)
-    
+
         speak_and_display("Please say your answer.", lang="en", lcd=lcd)
         while True:
             audio = record_once("answer.wav", lcd=lcd)
@@ -257,13 +293,14 @@ def question_mode(lcd=None):
             if answer:
                 break
             speak_and_display("Sorry, I didn't catch your answer. Please try again.", lang="en", lcd=lcd)
-            
+
         if lcd:
             lcd.flash_message(f"Your Answer {answer}", duration=2)
-            
+
         if question_type == "multiple choice":
             eval_prompt = (
                 "You are an English grammar teacher.\n"
+                f"Level: {level if level else 'unspecified'}\n"
                 f"Question:\n{last_question}\n"
                 + "\n".join(options) + "\n\n"
                 f"Correct Answer: {last_correct_answer}\n"
@@ -276,12 +313,13 @@ def question_mode(lcd=None):
         else:
             eval_prompt = (
                 "You are an English grammar teacher.\n"
+                f"Level: {level if level else 'unspecified'}\n"
                 f"Question:\n{last_question}\n\n"
                 f"Correct Answer: {last_correct_answer}\n"
                 f"User Answer: {answer}\n\n"
                 "Evaluate if the user's answer has the SAME MEANING as the correct answer, "
                 "even if the wording is different.\n"
-                "do not mark incorrect if the answer is a synonym, paraphrase, or "
+                "Do not mark incorrect if the answer is a synonym, paraphrase, or "
                 "slightly different wording with the same meaning.\n"
                 "Respond in Indonesian with:\n"
                 "[Penilaian] <singkat benar/hampir benar/salah>\n"
@@ -290,13 +328,15 @@ def question_mode(lcd=None):
 
         feedback = gcp_gemini_generate_chat([{"role": "user", "parts": [{"text": eval_prompt}]}]).replace("*", "")
         print(f"[EVALUATION FEEDBACK]: {feedback}")
-
+        
+        cleaned_feedback = clean_for_tts(feedback)
+        
         if "[Penilaian]" in feedback and "[Alasan]" in feedback:
-            penilaian, alasan = feedback.split("[Alasan]", 1)
-            speak_and_display(penilaian.replace("[Penilaian]", "").strip(), lang="id", lcd=lcd)
-            speak_and_display(alasan.strip(), lang="id", mode="scroll", lcd=lcd)
+            penilaian, alasan = cleaned_feedback.split("[Alasan]", 1)
+            speak_and_display(clean_for_tts(penilaian.replace("[Penilaian]", "").strip()), lang="id", lcd=lcd)
+            speak_and_display(clean_for_tts(alasan.strip()), lang="id", mode="scroll", lcd=lcd)
         else:
-            speak_and_display(feedback, lang="id", mode="scroll", lcd=lcd)
+            speak_and_display(clean_for_tts(cleaned_feedback), lang="id", mode="scroll", lcd=lcd)
 
         keputusan = tanya_lanjut_question(lcd=lcd)
         if keputusan == "exit":
