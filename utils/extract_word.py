@@ -65,7 +65,6 @@ def extract_vocab_word(text, lang="id"):
     else:
         return " ".join(valid_words[-4:])
 
-
 # Stop words sederhana untuk membersihkan topik
 stop_words = {'i', 'want', 'to', 'a', 'an', 'the', 'about', 'in', 'for', 'with', 'on', 'at', 'by', 'of', 'can', 'we', 'do', 
               'lets', 'try', 'let', 'us', 'learn', 'please', 'give', 'show', 'teach', 'me', 'explain', 'saya', 'ingin', 
@@ -101,22 +100,48 @@ valid_topics = [
 # Urutkan berdasarkan panjang descending untuk match terpanjang dulu
 valid_topics.sort(key=len, reverse=True)
 
-def extract_topic(text):
-    """
-    Mengekstrak topik dari kalimat, robust untuk input langsung tanpa pola.
-    """
+# Precompile pola topik
+def _normalize(s: str) -> str:
+    s = s.lower().strip()
+    s = re.sub(r"[^\w\s\-]", "", s)
+    s = s.replace("-", " ")
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+# Precompile pola topik terhadap bentuk yang sudah dinormalisasi (tanpa minus)
+TOPIC_PATTERNS = []
+for t in valid_topics:
+    t_norm = _normalize(t)  # contoh: "non-count" -> "non count"
+    pat = re.compile(r'\b' + re.escape(t_norm).replace(r'\ ', r'\s+') + r'\b')
+    TOPIC_PATTERNS.append((t, pat))  # simpan kanonik 't' + pola untuk teks yang sudah dinormalisasi
+
+LEVEL_ALIASES = {
+    "basic": "basic", "beginner": "basic", "elementary": "basic", "dasar": "basic", "pemula": "basic",
+    "intermediate": "intermediate", "menengah": "intermediate", "mid": "intermediate",
+    "advanced": "advanced", "advance": "advanced", "lanjutan": "advanced", "expert": "advanced"
+}
+LEVEL_RE = re.compile(r"\b(" + "|".join(map(re.escape, LEVEL_ALIASES.keys())) + r")\b")
+
+def extract_topic_and_level(text):
     if not text or len(text.strip()) == 0:
-        return "No topic found"
-    
-    text = text.lower().strip()
-    text = re.sub(r"[^\w\s\-]", "", text)
-    
-    # Prioritas 1: Cek jika ada valid topic di text
-    for topic in valid_topics:
-        if topic in text:
-            return topic
-    
-    # Prioritas 2: Pola regex untuk frasa
+        return {"topic": "No topic found", "level": "unspecified"}
+
+    text = _normalize(text)
+
+    # 1) Deteksi level (default: unspecified = tidak ditentukan)
+    level = "unspecified"
+    m = LEVEL_RE.search(text)
+    if m:
+        level = LEVEL_ALIASES[m.group(1)]
+        text = LEVEL_RE.sub(" ", text)
+        text = re.sub(r"\s+", " ", text).strip()
+
+    # 2) Deteksi topik (pakai teks yang sudah dinormalisasi)
+    for topic_canonical, rx in TOPIC_PATTERNS:
+        if rx.search(text):
+            return {"topic": topic_canonical, "level": level}
+
+    # 3) Pola frasa
     patterns = [
         r"(?:i want to learn|i need to learn|teach me about|explain about|tell me about) (.+)",
         r"(?:can we learn|can you teach|could you explain) (.+)",
@@ -126,26 +151,29 @@ def extract_topic(text):
         r"(?:tentang|bahas) (.+)",
         r"(?:learn|study|discuss|talk about) (.+)",
     ]
-    
+
     for pattern in patterns:
         match = re.search(pattern, text)
         if match:
-            topic = match.group(1).strip()
-            # Bersihkan stop words
-            topic_words = [word for word in topic.split() if word not in stop_words]
+            topic_phrase = match.group(1).strip()
+            topic_words = [w for w in topic_phrase.split() if w not in stop_words]
             cleaned_topic = " ".join(topic_words)
-            # Cek lagi jika cleaned match valid topic
-            for v_topic in valid_topics:
-                if v_topic in cleaned_topic:
-                    return v_topic
-            return cleaned_topic if cleaned_topic else text
-    
-    # Fallback: Bersihkan seluruh text, ambil semua jika <=5 kata, atau last 5 jika lebih
+
+            # cek lagi ke daftar kanonik
+            for topic_canonical, rx in TOPIC_PATTERNS:
+                if rx.search(cleaned_topic):
+                    return {"topic": topic_canonical, "level": level}
+
+            return {"topic": cleaned_topic if cleaned_topic else text, "level": level}
+
+    # 4) Fallback (pakai `text`)
     words = text.split()
-    cleaned_words = [word for word in words if word not in stop_words]
+    cleaned_words = [w for w in words if w not in stop_words]
     if not cleaned_words:
-        return " ".join(words[-2:]) if len(words) >= 2 else text
-    if len(cleaned_words) <= 5:
-        return " ".join(cleaned_words)
+        topic_fb = " ".join(words[-2:]) if len(words) >= 2 else text
+    elif len(cleaned_words) <= 5:
+        topic_fb = " ".join(cleaned_words)
     else:
-        return " ".join(cleaned_words[-5:])
+        topic_fb = " ".join(cleaned_words[-5:])
+
+    return {"topic": topic_fb, "level": level}
