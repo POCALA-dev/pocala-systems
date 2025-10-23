@@ -1,9 +1,11 @@
 import time
-from inout.whisper_transcriber import transcribe_en, transcribe_id, transcribe_auto
+from inout.whisper_transcriber import transcribe_auto
 from inout.recorder import record_once
 from inout.piper_output import speak_and_display
 from clients.ollama_client import OllamaClient
 from utils.response_check import is_yes, is_no
+from utils.cleaned_text import clean_for_tts
+
 
 def pilih_bahasa_input(lcd=None):
     """
@@ -18,7 +20,7 @@ def pilih_bahasa_input(lcd=None):
     speak_and_display(
         "Welcome to ask mode. Please choose your input language. English or Indonesia",
         lang="en",
-        lcd=lcd
+        lcd=lcd,
     )
 
     while True:
@@ -28,17 +30,17 @@ def pilih_bahasa_input(lcd=None):
             speak_and_display(
                 "No audio detected. Please try again.",
                 lang="en",
-                lcd=lcd
+                lcd=lcd,
             )
             continue
 
-        lang_input = transcribe_auto(audio, lcd=lcd).lower()
+        lang_input = transcribe_auto(audio, lcd=lcd).strip().lower()
 
         if "english" in lang_input or "inggris" in lang_input:
             speak_and_display(
                 "Input language set to English.",
                 lang="en",
-                lcd=lcd
+                lcd=lcd,
             )
             return "en"
 
@@ -46,14 +48,14 @@ def pilih_bahasa_input(lcd=None):
             speak_and_display(
                 "Bahasa input disetel ke Indonesia.",
                 lang="id",
-                lcd=lcd
+                lcd=lcd,
             )
             return "id"
 
         speak_and_display(
             "Language not recognized. Let's try again.",
             lang="en",
-            lcd=lcd
+            lcd=lcd,
         )
 
 
@@ -69,10 +71,9 @@ def tanya_ulang_ask(lang="en", lcd=None):
         bool: True jika pengguna ingin bertanya lagi, False jika tidak.
     """
     speak_and_display(
-        "Do you want to ask another question?"
-        if lang == "en" else "Ingin tanya lagi?",
+        "Do you want to ask another question?" if lang == "en" else "Ingin tanya lagi?",
         lang=lang,
-        lcd=lcd
+        lcd=lcd,
     )
 
     while True:
@@ -80,10 +81,9 @@ def tanya_ulang_ask(lang="en", lcd=None):
 
         if audio is None:
             speak_and_display(
-                "No audio detected. Please try again."
-                if lang == "en" else "Tidak ada audio. Coba lagi.",
+                "No audio detected. Please try again." if lang == "en" else "Tidak ada audio. Coba lagi.",
                 lang=lang,
-                lcd=lcd
+                lcd=lcd,
             )
             continue
 
@@ -92,10 +92,9 @@ def tanya_ulang_ask(lang="en", lcd=None):
 
         if is_no(reply):
             speak_and_display(
-                "Exiting ask function. Goodbye!"
-                if lang == "en" else "Keluar dari fungsi tanya. Sampai jumpa!",
+                "Exiting ask function. Goodbye!" if lang == "en" else "Keluar dari fungsi tanya. Sampai jumpa!",
                 lang=lang,
-                lcd=lcd
+                lcd=lcd,
             )
             return False
 
@@ -103,10 +102,9 @@ def tanya_ulang_ask(lang="en", lcd=None):
             return True
 
         speak_and_display(
-            "I didn't understand. Please say yes or no."
-            if lang == "en" else "Saya tidak mengerti. Ucapkan ya atau tidak.",
+            "I didn't understand. Please say yes or no." if lang == "en" else "Saya tidak mengerti. Ucapkan ya atau tidak.",
             lang=lang,
-            lcd=lcd
+            lcd=lcd,
         )
 
 
@@ -129,10 +127,9 @@ def ask_mode(lcd=None):
 
     while True:
         speak_and_display(
-            "Please ask your question."
-            if lang == "en" else "Silakan ajukan pertanyaan Anda.",
+            "Please ask your question." if lang == "en" else "Silakan ajukan pertanyaan Anda.",
             lang=lang,
-            lcd=lcd
+            lcd=lcd,
         )
 
         # Rekam pertanyaan sampai valid
@@ -141,10 +138,9 @@ def ask_mode(lcd=None):
 
             if audio is None:
                 speak_and_display(
-                    "No audio detected. Please try again."
-                    if lang == "en" else "Tidak ada audio. Coba lagi.",
+                    "No audio detected. Please try again." if lang == "en" else "Tidak ada audio. Coba lagi.",
                     lang=lang,
-                    lcd=lcd
+                    lcd=lcd,
                 )
                 continue
 
@@ -155,7 +151,7 @@ def ask_mode(lcd=None):
                     if lang == "en"
                     else "Saya tidak mendengar pertanyaannya. Bisakah kamu ulangi?",
                     lang=lang,
-                    lcd=lcd
+                    lcd=lcd,
                 )
                 continue
             break
@@ -164,9 +160,7 @@ def ask_mode(lcd=None):
 
         if lcd:
             lcd.flash_message(f"Questions: {question}", duration=3)
-            lcd.display_text(
-                "Generating..." if lang == "en" else "Menjawab..."
-            )
+            lcd.display_text("Generating..." if lang == "en" else "Menjawab...")
 
         # Prompt disesuaikan bahasa
         prompt = (
@@ -175,23 +169,22 @@ def ask_mode(lcd=None):
             else f"Jawablah pertanyaan berikut secara ringkas dan langsung ke intinya:\n{question}"
         )
 
-        answer = ollama.generate(prompt).strip().replace("*", "")
+        answer = OllamaClient.generate(ollama, prompt).strip().replace("*", "")
+        answer = clean_for_tts(answer)
 
         if not answer:
             speak_and_display(
-                "Sorry, I can't answer that now."
-                if lang == "en" else "Maaf, tidak bisa menjawab saat ini.",
+                "Sorry, I can't answer that now." if lang == "en" else "Maaf, tidak bisa menjawab saat ini.",
                 lang=lang,
-                lcd=lcd
+                lcd=lcd,
             )
             continue
 
         speak_and_display(
-            f"the answer is {answer}"
-            if lang == "en" else f"jawabannya adalah {answer}",
+            (f"the answer is {answer}" if lang == "en" else f"jawabannya adalah {answer}"),
             lang=lang,
             mode="scroll",
-            lcd=lcd
+            lcd=lcd,
         )
         time.sleep(1)
 
