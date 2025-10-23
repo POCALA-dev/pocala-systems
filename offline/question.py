@@ -8,10 +8,12 @@ from inout.whisper_transcriber import transcribe_auto, transcribe_en
 from inout.recorder import record_once
 from inout.piper_output import speak_and_display
 from clients.ollama_client import OllamaClient
-from utils.extract_word import extract_topic
+from utils.extract_word import extract_topic_and_level
 from utils.path_helper import get_resource_path
 from utils.response_check import is_yes, is_no
 from utils.ollama_context_builder import ChatContext
+from utils.cleaned_text import clean_for_tts
+
 
 def normalize_answer(user_text, mode="mc"):
     """
@@ -111,6 +113,29 @@ def tanya_lanjut_question(lcd=None):
             )
 
 
+def _level_guidelines(lvl: str | None) -> str:
+    if not lvl or lvl == "unspecified":
+        return ""
+    if lvl == "advanced":
+        return (
+            "- Difficulty: advanced (C1–C2)\n"
+            "- Use complex grammar structures and advanced vocabulary\n"
+            "- Distractors should be subtle and plausible\n"
+        )
+    if lvl == "intermediate":
+        return (
+            "- Difficulty: intermediate (B1–B2)\n"
+            "- Mix simple and complex sentences; some less common vocabulary\n"
+            "- Distractors should test common confusions\n"
+        )
+    # basic
+    return (
+        "- Difficulty: basic (A1–A2)\n"
+        "- Use short, simple sentences and high-frequency vocabulary\n"
+        "- Avoid multiple grammar points in one item\n"
+    )
+
+
 def question_mode(lcd=None):
     """
     Mode latihan soal bahasa Inggris berbasis suara.
@@ -119,9 +144,6 @@ def question_mode(lcd=None):
     lalu menjawab pertanyaan melalui suara. Sistem membuat soal secara dinamis,
     memeriksa jawaban, memberikan umpan balik, dan menanyakan apakah ingin
     melanjutkan, mengganti topik, atau keluar.
-
-    Args:
-        lcd (LCDController, optional): Objek untuk menampilkan teks di LCD.
     """
     
     ollama = OllamaClient(model="gemma3:1b")
@@ -130,6 +152,7 @@ def question_mode(lcd=None):
 
     speak_and_display("Question function selected.", lang="en", lcd=lcd)
     topic = None
+    level = None
     question_type = None
     question_number = 1
     last_question = None
@@ -160,17 +183,24 @@ def question_mode(lcd=None):
                             speak_and_display("No audio detected. Please try again.", lang="en", lcd=lcd)
                             continue
                         raw_text = transcribe_en(audio_topic, lcd=lcd).strip()
-                        topic = extract_topic(raw_text)
-                        print(f"[TOPIC EXTRACTED]: {topic}")
+                        info = extract_topic_and_level(raw_text)  # {"topic": ..., "level": ...}
+                        topic = info.get("topic")
+                        level = info.get("level", "unspecified")
+                        print(f"[TOPIC EXTRACTED]: {topic} | LEVEL: {level}")
                         if not topic:
                             speak_and_display("Sorry, I didn't catch the topic. Please try again.", lang="en", lcd=lcd)
                             continue
                         break
-                    speak_and_display(f"topic chosen: {topic}", lang="en", lcd=lcd)
+                    # Tampilkan level hanya jika ada (bukan unspecified)
+                    if level and level != "unspecified":
+                        speak_and_display(f"topic chosen: {topic} (level: {level})", lang="en", lcd=lcd)
+                    else:
+                        speak_and_display(f"topic chosen: {topic}", lang="en", lcd=lcd)
                     break
                 elif is_no(reply):
-                    # Pilih topic random dari daftar
+                    # Pilih topic random dari daftar (level dibiarkan unspecified agar bebas)
                     topic = random.choice(predefined_topics)
+                    level = "unspecified"
                     print(f"[TOPIC RANDOMLY CHOSEN]: {topic}")
                     speak_and_display(f"Random topic chosen: {topic}", lang="en", lcd=lcd)
                     break
@@ -210,10 +240,13 @@ def question_mode(lcd=None):
         if lcd:
             lcd.display_text(f"Generating question {question_number}...")
 
+        guides = _level_guidelines(level)
+
         if question_type == "multiple choice":
             prompt = (
                 f"Question Number {question_number}.\n"
                 f"Generate exactly ONE English multiple-choice question about the topic '{topic}'.\n"
+                f"{guides}"
                 f"Avoid repeating any of the previous questions mentioned in chat history.\n"
                 f"Include:\n"
                 f"- Question text\n"
@@ -226,6 +259,7 @@ def question_mode(lcd=None):
             prompt = (
                 f"Question Number {question_number}.\n"
                 f"Generate exactly ONE English short-answer question about the topic '{topic}'.\n"
+                f"{guides}"
                 f"Avoid repeating any of the previous questions mentioned in chat history.\n"
                 f"Include:\n"
                 f"- Question text without options\n"
@@ -246,12 +280,12 @@ def question_mode(lcd=None):
         previous_questions.append(extracted_question_line.strip())
 
         # Tampilkan pertanyaan
-        speak_and_display(question_text, lang="en", lcd=lcd)
+        speak_and_display(clean_for_tts(question_text), lang="en", lcd=lcd)
         time.sleep(0.5)
 
         # Tampilkan pilihan satu per satu (kalau ada)
         for opt in options:
-            speak_and_display(opt, lang="en", lcd=lcd)
+            speak_and_display(clean_for_tts(opt), lang="en", lcd=lcd)
             time.sleep(0.3)  # jeda antar pilihan
     
         # Minta jawaban user
@@ -277,6 +311,7 @@ def question_mode(lcd=None):
         if question_type == "multiple choice":
             eval_prompt = (
                 "You are an English grammar teacher.\n"
+                f"Level: {level if level else 'unspecified'}\n"
                 f"Question:\n{last_question}\n"
                 + "\n".join(options) + "\n\n"
                 f"Correct Answer: {last_correct_answer}\n"
@@ -289,6 +324,7 @@ def question_mode(lcd=None):
         else:  # short answer
             eval_prompt = (
                 "You are an English grammar teacher.\n"
+                f"Level: {level if level else 'unspecified'}\n"
                 f"Question:\n{last_question}\n\n"
                 f"Correct Answer: {last_correct_answer}\n"
                 f"User Answer: {answer}\n\n"
@@ -304,12 +340,14 @@ def question_mode(lcd=None):
         feedback = ollama.chat([{"role": "user", "content": eval_prompt}]).replace("*", "")
         print(f"[EVALUATION FEEDBACK]: {feedback}")
 
+        cleaned_feedback = clean_for_tts(feedback)
+        
         if "[Penilaian]" in feedback and "[Alasan]" in feedback:
-            penilaian, alasan = feedback.split("[Alasan]", 1)
-            speak_and_display(penilaian.replace("[Penilaian]", "").strip(), lang="id", lcd=lcd)
-            speak_and_display(alasan.strip(), lang="id", mode="scroll", lcd=lcd)
+            penilaian, alasan = cleaned_feedback.split("[Alasan]", 1)
+            speak_and_display(clean_for_tts(penilaian.replace("[Penilaian]", "").strip()), lang="id", lcd=lcd)
+            speak_and_display(clean_for_tts(alasan.strip()), lang="id", mode="scroll", lcd=lcd)
         else:
-            speak_and_display(feedback, lang="id", mode="scroll", lcd=lcd)
+            speak_and_display(clean_for_tts(cleaned_feedback), lang="id", mode="scroll", lcd=lcd)
 
         # Tanya lanjut
         keputusan = tanya_lanjut_question(lcd=lcd)
