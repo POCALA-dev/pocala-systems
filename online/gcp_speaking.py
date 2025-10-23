@@ -5,7 +5,8 @@ from utils.gcp_context_builder import GcpChatContext
 from inout.recorder import record_once
 from inout.gcp_output import speak_and_display
 from utils.response_check import is_exit, is_clear_context
-from utils.cleaned_text import hapus_emoji_dan_ekspresi
+from utils.cleaned_text import hapus_emoji_dan_ekspresi, clean_for_tts
+import time
 
 
 def pilih_bahasa_input(lcd=None):
@@ -39,11 +40,11 @@ def speaking_mode(lcd=None):
             "en",
             lcd,
         )
-        turn
+        return  # (perbaikan kecil agar alur berhenti jika tidak ada API key)
 
     lang = pilih_bahasa_input(lcd=lcd)
     if not lang:
-        turn
+        return  # (perbaikan kecil agar fungsi keluar jika gagal pilih bahasa)
 
     # Sapa pengguna berdasarkan bahasa yang dipilih
     if lang == "en":
@@ -58,7 +59,7 @@ def speaking_mode(lcd=None):
             lang="id",
             lcd=lcd,
         )
-        
+
     # system prompt yang sesuai untuk Gemini
     system_prompt = (
         "You are Pocala, a friendly, patient, and supportive English-speaking conversation partner. "
@@ -72,12 +73,12 @@ def speaking_mode(lcd=None):
     context = GcpChatContext(system_prompt=system_prompt, max_messages=10)
     transcribers = {"en": transcribe_en, "id": transcribe_id}
     interaction_count = 0
-    
+
     speak_and_display(
         "Please speak." if lang == "en" else "Silakan berbicara.",
         lang=lang, lcd=lcd
     )
-    
+
     while True:
         # Loop hingga mendapat input suara yang valid
         while True:
@@ -126,21 +127,21 @@ def speaking_mode(lcd=None):
                 lcd=lcd,
             )
             continue
-          
-        # Tambahkan pesan pengguna ke konteks
+
+        # Tambahkan pesan pengguna ke konteks (rapikan kapital awal tanpa mengubah isi)
         cleaned_input = (
             user_input[0].capitalize() + user_input[1:]
             if user_input
             else user_input
         )
-        
+
         context.add_user_message(cleaned_input)
         print(f"[USER]: {cleaned_input}")
-        
+
         if lcd:
             lcd.flash_message(f"User: {cleaned_input}", duration=2)
             lcd.display_text("Thinking..." if lang == "en" else "Berpikir...")
-        
+
         # Retry maksimal 3x jika model tidak membalas
         response = ""
         for attempt in range(1, 4):
@@ -150,14 +151,15 @@ def speaking_mode(lcd=None):
             except Exception as e:
                 print(f"[ERROR] Gemini chat failed: {e}")
                 response = ""
-        
+
             # Bersihkan respon dari emoji, tanda kurung, dan simbol *
             response = hapus_emoji_dan_ekspresi(response.replace("*", "")).strip()
-        
+            response = clean_for_tts(response)
+
             if response:
                 context.add_assistant_message(response)
                 break
-        
+
             print(f"[WARNING] Model tidak merespon, percobaan {attempt}/3")
             if lcd:
                 lcd.flash_message(
@@ -166,7 +168,7 @@ def speaking_mode(lcd=None):
                 )
             if attempt < 3:
                 time.sleep(1)
-        
+
         # Jika tetap tidak ada respons
         if not response:
             speak_and_display(
@@ -175,10 +177,10 @@ def speaking_mode(lcd=None):
                 lang=lang, lcd=lcd
             )
             continue
-        
-        # Tampilkan dan bacakan respons
+
+        # Tampilkan dan bacakan respons (tetap flow asli)
         speak_and_display(response, lang=lang, mode="scroll", lcd=lcd, scroll_speed=0.08)
-        
+
         # Hitung interaksi, beri pesan setiap kelipatan 5
         interaction_count += 1
         if interaction_count % 5 == 0:
