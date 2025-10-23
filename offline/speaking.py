@@ -6,7 +6,7 @@ from inout.piper_output import speak_and_display
 from clients.ollama_client import OllamaClient
 from utils.response_check import is_yes, is_no, is_exit, is_clear_context
 from utils.ollama_context_builder import ChatContext
-from utils.cleaned_text import hapus_emoji_dan_ekspresi
+from utils.cleaned_text import hapus_emoji_dan_ekspresi, clean_for_tts
 
 
 def pilih_bahasa_input(lcd=None) -> str:
@@ -126,6 +126,7 @@ def speaking_mode(lcd=None):
 
             # Bersihkan respon dari emoji, tanda kurung, dan simbol *
             response = hapus_emoji_dan_ekspresi(response.replace("*", "")).strip()
+            response = clean_for_tts(response)
 
             if response:
                 context.add_assistant_message(response)
