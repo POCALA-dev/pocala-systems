@@ -5,6 +5,7 @@ from inout.gcp_transcriber import transcribe_auto
 from inout.recorder import record_once
 from inout.gcp_output import speak_and_display
 from utils.response_check import is_yes, is_no
+from utils.cleaned_text import clean_for_tts
 
 
 def pilih_bahasa_input(lcd=None):
@@ -129,6 +130,7 @@ def ask_mode(lcd=None):
         )
 
         answer = gcp_gemini_generate(prompt_to_gemini).strip().replace("*", "")
+        answer = clean_for_tts(answer)
 
         if not answer:
             answer = (
